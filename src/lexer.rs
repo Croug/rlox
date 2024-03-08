@@ -1,56 +1,7 @@
 use crate::report_error;
 
-#[derive(Debug, Clone)]
-pub enum Token {
-    // Single-character tokens
-    LeftParen,
-    RightParen,
-    LeftBrace,
-    RightBrace,
-    Comma,
-    Dot,
-    Minus,
-    Plus,
-    SemiColon,
-    Slash,
-    Star,
-
-    // One or two character tokens
-    Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Greater,
-    GreaterEqual,
-    Less,
-    LessEqual,
-
-    // Literals
-    Identifier(String),
-    String(String),
-    Number(f64),
-
-    // Keywords
-    And,
-    Class,
-    Else,
-    False,
-    Fun,
-    For,
-    If,
-    Nil,
-    Or,
-    Print,
-    Return,
-    Super,
-    This,
-    True,
-    Var,
-    While,
-
-    // End of file
-    Eof,
-}
+pub mod token;
+use token::Token;
 
 pub struct Scanner {
     source: String,
@@ -177,7 +128,7 @@ impl Scanner {
     }
 
     fn scan_token(&mut self) -> Option<Token> {
-        return Some(match self.advance().expect("Attempt to read token past end of file") {
+        return Some(match self.advance()? {
             '(' => Token::LeftParen,
             ')' => Token::RightParen,
             '{' => Token::LeftBrace,
