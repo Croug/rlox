@@ -4,6 +4,7 @@ use clap::Parser;
 use lexer::Scanner;
 
 mod lexer;
+mod ast;
 
 #[derive(Parser, Debug)]
 struct Cli {
