@@ -140,20 +140,25 @@ impl Scanner {
             ';' => Token::SemiColon,
             '*' => Token::Star,
 
-            '!' => if self.match_next('=') { Token::BangEqual } else { Token::Bang },
-            '=' => if self.match_next('=') { Token::EqualEqual } else { Token::Equal },
-            '<' => if self.match_next('=') { Token::LessEqual } else { Token::Less },
-            '>' => if self.match_next('=') { Token::GreaterEqual } else { Token::Greater },
+            '!' if self.match_next('=') => Token::BangEqual,
+            '!' => Token::Bang,
+            '=' if self.match_next('=') => Token::EqualEqual,
+            '=' => Token::Equal,
+            '<' if self.match_next('=') => Token::LessEqual,
+            '<' => Token::Less,
+            '>' if self.match_next('=') => Token::GreaterEqual,
+            '>' => Token::Greater,
 
             '"' => self.scan_string()?,
 
             c if c.is_digit(10) => self.scan_number(),
             c if c.is_alphabetic() || c == '_' => self.scan_identifier(),
 
-            '/' => if self.match_next('/') {
+            '/' if self.match_next('/') => {
                 self.consume_line();
                 return None;
-            } else { Token::Slash }
+            }
+            '/' => Token::Slash,
 
             ' ' | '\r' | '\t' => return None,
 
