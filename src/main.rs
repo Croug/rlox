@@ -1,10 +1,10 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use clap::Parser;
-use lexer::Scanner;
+use lexer::{token::Token, Scanner};
 
 mod lexer;
-mod ast;
+mod parser;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -14,14 +14,20 @@ struct Cli {
 fn run(code: String) {
     let mut scanner = Scanner::new(code);
     let tokens = scanner.scan_tokens();
-
-    for token in tokens.iter() {
-        dbg!(token);
-    }
+    let mut parser = parser::Parser::new(tokens);
+    _ = dbg!(parser.parse());
 }
 
-fn report_error(line: usize, message: &str) {
+fn report_lex_error(line: usize, message: &str) {
     report(line, "", message);
+}
+
+fn report_parse_error(token: Token, message: &str) {
+    if token == Token::Eof {
+        report(0, "at end", message)
+    } else {
+        report(0, format!("at '{token}'").as_str(), message)
+    }
 }
 
 fn report(line: usize, location: &str, message: &str) {

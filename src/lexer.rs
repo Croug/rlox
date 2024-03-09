@@ -1,4 +1,4 @@
-use crate::report_error;
+use crate::report_lex_error;
 
 pub mod token;
 use token::Token;
@@ -72,7 +72,7 @@ impl Scanner {
         }
 
         if !self.more_tokens() {
-            report_error(self.line, "Unterminated string");
+            report_lex_error(self.line, "Unterminated string");
             return None;
         }
 
@@ -168,7 +168,7 @@ impl Scanner {
             }
 
             c => {
-                report_error(self.line, format!("Unexpected character: {c}").as_str());
+                report_lex_error(self.line, format!("Unexpected character: {c}").as_str());
                 return None;
             }
         }) 

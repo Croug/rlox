@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::lexer::token::Token;
 
+#[derive(Debug)]
 pub enum Expression {
     Literal(LiteralValue),
     Unary {
@@ -16,6 +17,7 @@ pub enum Expression {
     Grouping(Box<Expression>),
 }
 
+#[derive(Debug)]
 pub enum LiteralValue {
     Number(f64),
     String(String),
