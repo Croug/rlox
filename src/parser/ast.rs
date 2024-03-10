@@ -32,7 +32,7 @@ pub enum Statement {
     Var {
         identifier: Token,
         initializer: Option<Expression>,
-    }
+    },
 }
 
 impl fmt::Display for LiteralValue {
@@ -57,7 +57,7 @@ impl fmt::Display for Expression {
                 right,
             } => write!(f, "({left} {operator} {right})"),
             Expression::Grouping(expr) => write!(f, "({expr})"),
-            Expression::Variable(token) => write!(f, "{token}", token=token.token_type)
+            Expression::Variable(token) => write!(f, "{token}", token = token.token_type),
         }
     }
 }

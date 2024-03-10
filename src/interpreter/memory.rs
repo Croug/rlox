@@ -20,7 +20,10 @@ impl Memory {
             Some(value) => Ok(value.clone()),
             None => Err(RuntimeError::new(
                 identifier.clone(),
-                format!("Undefined variable '{token}'", token = identifier.token_type),
+                format!(
+                    "Undefined variable '{token}'",
+                    token = identifier.token_type
+                ),
             )),
         }
     }

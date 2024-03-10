@@ -6,7 +6,6 @@ use lexer::{
     token::{Token, TokenType},
     Scanner,
 };
-use parser::ast::LiteralValue;
 
 mod interpreter;
 mod lexer;
@@ -22,7 +21,7 @@ fn run(code: String, interpreter: &mut Interpreter) -> Result<(), Box<dyn Error>
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
     let asts = parser.parse()?;
-    let result = interpreter.interpret(asts);
+    _ = interpreter.interpret(asts);
 
     Ok(())
 }
@@ -44,7 +43,11 @@ fn report_parse_error(token: Token, message: &str) {
 }
 
 fn report_runtime_error(error: interpreter::RuntimeError) {
-    report(error.token.line, format!("at '{}'", error.token.token_type).as_str(), &error.message)
+    report(
+        error.token.line,
+        format!("at '{}'", error.token.token_type).as_str(),
+        &error.message,
+    )
 }
 
 fn report(line: usize, location: &str, message: &str) {
@@ -52,7 +55,10 @@ fn report(line: usize, location: &str, message: &str) {
 }
 
 fn run_file(file: PathBuf) {
-    _ = run(fs::read_to_string(file).expect("Failed to read file"), &mut Interpreter::new());
+    _ = run(
+        fs::read_to_string(file).expect("Failed to read file"),
+        &mut Interpreter::new(),
+    );
 }
 
 fn run_prompt() {

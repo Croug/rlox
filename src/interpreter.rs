@@ -2,7 +2,7 @@ use std::{error::Error, f64::NEG_INFINITY, fmt::Display, mem::discriminant};
 
 use crate::{
     lexer::token::{Token, TokenType},
-    parser::ast::{self, LiteralValue, Statement},
+    parser::ast::{self, Statement},
     report_runtime_error,
 };
 
@@ -37,13 +37,13 @@ impl Display for RuntimeError {
 impl Error for RuntimeError {}
 
 pub struct Interpreter {
-    memory: Memory
+    memory: Memory,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Self {
-            memory: Memory::new()
+            memory: Memory::new(),
         }
     }
     fn cast_to_num_nil(&self, literal: ast::LiteralValue) -> ast::LiteralValue {
@@ -119,7 +119,10 @@ impl Interpreter {
                 let value = self.evaluate_expression(expr)?;
                 println!("{value}");
             }
-            Statement::Var { identifier, initializer } => {
+            Statement::Var {
+                identifier,
+                initializer,
+            } => {
                 if let Some(initializer) = initializer {
                     let value = self.evaluate_expression(initializer)?;
                     self.memory.set(identifier, value);
@@ -129,7 +132,10 @@ impl Interpreter {
 
         Ok(())
     }
-    fn evaluate_expression(&mut self, expression: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+    fn evaluate_expression(
+        &mut self,
+        expression: ast::Expression,
+    ) -> Result<ast::LiteralValue, RuntimeError> {
         Ok(match expression {
             ast::Expression::Literal(literal) => literal,
             ast::Expression::Grouping(expr) => self.evaluate_expression(*expr)?,

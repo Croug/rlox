@@ -1,8 +1,7 @@
 use std::{mem::discriminant, vec};
 
 use crate::{
-    lexer::token::{Token, TokenType},
-    report, report_lex_error, report_parse_error,
+    lexer::token::{Token, TokenType}, report_parse_error,
 };
 
 use self::ast::{Expression, Statement};
@@ -107,41 +106,50 @@ impl Parser {
 
     fn declaration(&mut self) -> Result<Statement, String> {
         if self.match_tokens(vec![TokenType::Var]) {
-            self.varDeclaration()
+            self.var_declaration()
         } else {
             self.statement()
         }
     }
 
-    fn varDeclaration(&mut self) -> Result<Statement, String> {
-        let identifier = self.consume(TokenType::Identifier("".to_string()), "Expect variable name")?;
+    fn var_declaration(&mut self) -> Result<Statement, String> {
+        let identifier = self.consume(
+            TokenType::Identifier("".to_string()),
+            "Expect variable name",
+        )?;
         let mut initializer = None;
 
         if self.match_tokens(vec![TokenType::Equal]) {
             initializer = Some(self.expression()?);
         }
 
-        self.consume(TokenType::SemiColon, "Expect ';' after variable declaration")?;
+        self.consume(
+            TokenType::SemiColon,
+            "Expect ';' after variable declaration",
+        )?;
 
-        Ok(Statement::Var { identifier, initializer })
+        Ok(Statement::Var {
+            identifier,
+            initializer,
+        })
     }
 
     fn statement(&mut self) -> Result<Statement, String> {
         if self.match_tokens(vec![TokenType::Print]) {
-            self.printStatement()
+            self.print_statement()
         } else {
-            self.expressionStatement()
+            self.expression_statement()
         }
     }
 
-    fn expressionStatement(&mut self) -> Result<Statement, String> {
+    fn expression_statement(&mut self) -> Result<Statement, String> {
         let expr = self.expression()?;
         self.consume(TokenType::SemiColon, "Expect ';' after expression")?;
 
         Ok(Statement::Expression(expr))
     }
 
-    fn printStatement(&mut self) -> Result<Statement, String> {
+    fn print_statement(&mut self) -> Result<Statement, String> {
         let expr = self.expression()?;
         self.consume(TokenType::SemiColon, "Expect ';' after value")?;
 
@@ -191,7 +199,7 @@ impl Parser {
     fn term(&mut self) -> Result<Expression, String> {
         let mut expr = self.factor()?;
 
-        while (self.match_tokens(vec![TokenType::Minus, TokenType::Plus])) {
+        while self.match_tokens(vec![TokenType::Minus, TokenType::Plus]) {
             let operator = self.previous().clone().token_type;
             let right = self.factor()?;
             expr = Expression::Binary {
