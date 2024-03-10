@@ -1,4 +1,4 @@
-use std::mem::discriminant;
+use std::{mem::discriminant, vec};
 
 use crate::{
     lexer::token::{Token, TokenType},
@@ -23,7 +23,7 @@ impl Parser {
         let mut statements = vec![];
 
         while self.more_tokens() {
-            match self.statement() {
+            match self.declaration() {
                 Ok(statement) => statements.push(statement),
                 Err(_) => self.synchronize(),
             }
@@ -105,8 +105,29 @@ impl Parser {
         self.peek().token_type != TokenType::Eof
     }
 
+    fn declaration(&mut self) -> Result<Statement, String> {
+        if self.match_tokens(vec![TokenType::Var]) {
+            self.varDeclaration()
+        } else {
+            self.statement()
+        }
+    }
+
+    fn varDeclaration(&mut self) -> Result<Statement, String> {
+        let identifier = self.consume(TokenType::Identifier("".to_string()), "Expect variable name")?;
+        let mut initializer = None;
+
+        if self.match_tokens(vec![TokenType::Equal]) {
+            initializer = Some(self.expression()?);
+        }
+
+        self.consume(TokenType::SemiColon, "Expect ';' after variable declaration")?;
+
+        Ok(Statement::Var { identifier, initializer })
+    }
+
     fn statement(&mut self) -> Result<Statement, String> {
-        if(self.match_tokens(vec![TokenType::Print])) {
+        if self.match_tokens(vec![TokenType::Print]) {
             self.printStatement()
         } else {
             self.expressionStatement()
@@ -229,6 +250,7 @@ impl Parser {
 
                 return Ok(Expression::Grouping(Box::new(expr)));
             }
+            TokenType::Identifier(_) => Expression::Variable(self.peek().clone()),
             _ => return Self::error(self.peek().clone(), "Expect expression"),
         };
 

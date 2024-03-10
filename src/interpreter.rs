@@ -1,35 +1,34 @@
 use std::{error::Error, f64::NEG_INFINITY, fmt::Display, mem::discriminant};
 
 use crate::{
-    lexer::token::TokenType,
+    lexer::token::{Token, TokenType},
     parser::ast::{self, LiteralValue, Statement},
     report_runtime_error,
 };
 
+use self::memory::Memory;
+
+pub mod memory;
+
 #[derive(Debug)]
 pub struct RuntimeError {
-    pub token: TokenType,
+    pub token: Token,
     pub message: String,
 }
 
 impl RuntimeError {
-    pub fn new(token: TokenType, message: String) -> Self {
+    pub fn new(token: Token, message: String) -> Self {
         Self { token, message }
     }
 }
 
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let location = if self.token == TokenType::Eof {
-            "at end".to_string()
-        } else {
-            format!("at '{token}'", token = self.token)
-        };
         write!(
             f,
-            "[line {line}] Error {location}: {message}",
+            "[line {line}] Error at '{token}': {message}",
             line = 0,
-            location = location,
+            token = self.token.token_type,
             message = self.message
         )
     }
@@ -37,11 +36,15 @@ impl Display for RuntimeError {
 
 impl Error for RuntimeError {}
 
-pub struct Interpreter;
+pub struct Interpreter {
+    memory: Memory
+}
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self
+        Self {
+            memory: Memory::new()
+        }
     }
     fn cast_to_num_nil(&self, literal: ast::LiteralValue) -> ast::LiteralValue {
         match literal {
@@ -116,6 +119,12 @@ impl Interpreter {
                 let value = self.evaluate_expression(expr)?;
                 println!("{value}");
             }
+            Statement::Var { identifier, initializer } => {
+                if let Some(initializer) = initializer {
+                    let value = self.evaluate_expression(initializer)?;
+                    self.memory.set(identifier, value);
+                }
+            }
         }
 
         Ok(())
@@ -130,6 +139,7 @@ impl Interpreter {
                 operator,
                 right,
             } => self.evaluate_binary(*left, operator, *right)?,
+            ast::Expression::Variable(token) => self.memory.get(token)?,
         })
     }
     fn evaluate_unary(

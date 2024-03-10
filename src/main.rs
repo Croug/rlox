@@ -17,12 +17,11 @@ struct Cli {
     pub file: Option<PathBuf>,
 }
 
-fn run(code: String) -> Result<(), Box<dyn Error>> {
+fn run(code: String, interpreter: &mut Interpreter) -> Result<(), Box<dyn Error>> {
     let mut scanner = Scanner::new(code);
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
     let asts = parser.parse()?;
-    let mut interpreter = Interpreter::new();
     let result = interpreter.interpret(asts);
 
     Ok(())
@@ -45,11 +44,7 @@ fn report_parse_error(token: Token, message: &str) {
 }
 
 fn report_runtime_error(error: interpreter::RuntimeError) {
-    if error.token == TokenType::Eof {
-        report(0, "at end", &error.message)
-    } else {
-        report(0, format!("at '{}'", error.token).as_str(), &error.message)
-    }
+    report(error.token.line, format!("at '{}'", error.token.token_type).as_str(), &error.message)
 }
 
 fn report(line: usize, location: &str, message: &str) {
@@ -57,18 +52,19 @@ fn report(line: usize, location: &str, message: &str) {
 }
 
 fn run_file(file: PathBuf) {
-    _ = run(fs::read_to_string(file).expect("Failed to read file"));
+    _ = run(fs::read_to_string(file).expect("Failed to read file"), &mut Interpreter::new());
 }
 
 fn run_prompt() {
     let stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
+    let mut interpreter = Interpreter::new();
     loop {
         let mut input = String::new();
         print!("> ");
         stdout.flush().unwrap();
         stdin.read_line(&mut input).unwrap();
-        _ = run(input)
+        _ = run(input, &mut interpreter)
     }
 }
 

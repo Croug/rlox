@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::lexer::token::TokenType;
+use crate::lexer::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub enum Expression {
@@ -15,9 +15,10 @@ pub enum Expression {
         right: Box<Expression>,
     },
     Grouping(Box<Expression>),
+    Variable(Token),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralValue {
     Number(f64),
     String(String),
@@ -28,6 +29,10 @@ pub enum LiteralValue {
 pub enum Statement {
     Expression(Expression),
     Print(Expression),
+    Var {
+        identifier: Token,
+        initializer: Option<Expression>,
+    }
 }
 
 impl fmt::Display for LiteralValue {
@@ -52,6 +57,7 @@ impl fmt::Display for Expression {
                 right,
             } => write!(f, "({left} {operator} {right})"),
             Expression::Grouping(expr) => write!(f, "({expr})"),
+            Expression::Variable(token) => write!(f, "{token}", token=token.token_type)
         }
     }
 }
