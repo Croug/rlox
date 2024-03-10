@@ -2,7 +2,7 @@ use std::{error::Error, fs, io::Write, path::PathBuf};
 
 use clap::Parser;
 use interpreter::Interpreter;
-use lexer::{token::Token, Scanner};
+use lexer::{token::{Token, TokenType}, Scanner};
 use parser::ast::LiteralValue;
 
 mod lexer;
@@ -30,15 +30,15 @@ fn report_lex_error(line: usize, message: &str) {
 }
 
 fn report_parse_error(token: Token, message: &str) {
-    if token == Token::Eof {
-        report(0, "at end", message)
+    if token.token_type == TokenType::Eof {
+        report(token.line, "at end", message)
     } else {
-        report(0, format!("at '{token}'").as_str(), message)
+        report(token.line, format!("at '{}'", token.token_type).as_str(), message)
     }
 }
 
 fn report_runtime_error(error: interpreter::RuntimeError) {
-    if error.token == Token::Eof {
+    if error.token == TokenType::Eof {
         report(0, "at end", &error.message)
     } else {
         report(0, format!("at '{}'", error.token).as_str(), &error.message)

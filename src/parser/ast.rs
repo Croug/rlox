@@ -1,17 +1,17 @@
 use std::fmt;
 
-use crate::lexer::token::Token;
+use crate::lexer::token::TokenType;
 
 #[derive(Debug)]
 pub enum Expression {
     Literal(LiteralValue),
     Unary {
-        operator: Token,
+        operator: TokenType,
         right: Box<Expression>,
     },
     Binary {
         left: Box<Expression>,
-        operator: Token,
+        operator: TokenType,
         right: Box<Expression>,
     },
     Grouping(Box<Expression>),

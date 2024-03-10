@@ -1,6 +1,6 @@
 use std::mem::discriminant;
 
-use crate::{lexer::token::Token, report, report_lex_error, report_parse_error};
+use crate::{lexer::token::{Token, TokenType}, report, report_lex_error, report_parse_error};
 
 use self::ast::Expression;
 
@@ -38,11 +38,11 @@ impl Parser {
         self.previous()
     }
 
-    fn consume(&mut self, token: Token, message: &str) -> Result<Token, String> {
+    fn consume(&mut self, token: TokenType, message: &str) -> Result<Token, String> {
         if self.check(token.clone()) {
             Ok(self.advance().clone())
         } else {
-            Self::error(token, message)
+            Self::error(Token::new(token, self.peek().line), message)
         }
     }
 
@@ -54,12 +54,12 @@ impl Parser {
 
     fn synchronize(&mut self) {
         while self.more_tokens() {
-            if *self.previous() == Token::SemiColon {
+            if self.previous().token_type == TokenType::SemiColon {
                 return;
             }
 
-            match self.peek() {
-                Token::Class | Token::Fun | Token::Var | Token::For | Token::If | Token::While | Token::Print | Token::Return => return,
+            match self.peek().token_type {
+                TokenType::Class | TokenType::Fun | TokenType::Var | TokenType::For | TokenType::If | TokenType::While | TokenType::Print | TokenType::Return => return,
                 _ => {}
             }
 
@@ -67,11 +67,11 @@ impl Parser {
         }
     }
 
-    fn check(&self, token: Token) -> bool {
-        self.more_tokens() && discriminant(&token) == discriminant(self.peek())
+    fn check(&self, token: TokenType) -> bool {
+        self.more_tokens() && discriminant(&token) == discriminant(&self.peek().token_type)
     }
 
-    fn match_tokens(&mut self, tokens: Vec<Token>) -> bool {
+    fn match_tokens(&mut self, tokens: Vec<TokenType>) -> bool {
         for token in tokens {
             if self.check(token) {
                 self.advance();
@@ -82,7 +82,7 @@ impl Parser {
     }
 
     fn more_tokens(&self) -> bool {
-        *self.peek() != Token::Eof
+        self.peek().token_type != TokenType::Eof
     }
 
     fn expression(&mut self) -> Result<Expression, String> {
@@ -91,8 +91,8 @@ impl Parser {
 
     fn equality(&mut self) -> Result<Expression, String> {
         let mut expr = self.comparison()?;
-        while self.match_tokens(vec![Token::BangEqual, Token::EqualEqual]) {
-            let operator = self.previous().clone();
+        while self.match_tokens(vec![TokenType::BangEqual, TokenType::EqualEqual]) {
+            let operator = self.previous().clone().token_type;
             let right = self.comparison()?;
             expr = Expression::Binary {
                 left: Box::new(expr),
@@ -107,8 +107,8 @@ impl Parser {
     fn comparison(&mut self) -> Result<Expression, String> {
         let mut expr = self.term()?;
 
-        while self.match_tokens(vec![Token::Greater, Token::GreaterEqual, Token::Less, Token::LessEqual]) {
-            let operator = self.previous().clone();
+        while self.match_tokens(vec![TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual]) {
+            let operator = self.previous().clone().token_type;
             let right = self.term()?;
             expr = Expression::Binary {
                 left: Box::new(expr),
@@ -123,8 +123,8 @@ impl Parser {
     fn term(&mut self) -> Result<Expression, String> {
         let mut expr = self.factor()?;
 
-        while(self.match_tokens(vec![Token::Minus, Token::Plus])) {
-            let operator = self.previous().clone();
+        while(self.match_tokens(vec![TokenType::Minus, TokenType::Plus])) {
+            let operator = self.previous().clone().token_type;
             let right = self.factor()?;
             expr = Expression::Binary {
                 left: Box::new(expr),
@@ -139,8 +139,8 @@ impl Parser {
     fn factor(&mut self) -> Result<Expression, String> {
         let mut expr = self.unary()?;
 
-        while self.match_tokens(vec![Token::Slash, Token::Star]) {
-            let operator = self.previous().clone();
+        while self.match_tokens(vec![TokenType::Slash, TokenType::Star]) {
+            let operator = self.previous().clone().token_type;
             let right = self.unary()?;
             expr = Expression::Binary {
                 left: Box::new(expr),
@@ -153,8 +153,8 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Result<Expression, String> {
-        if self.match_tokens(vec![Token::Bang, Token::Minus]) {
-            let operator = self.previous().clone();
+        if self.match_tokens(vec![TokenType::Bang, TokenType::Minus]) {
+            let operator = self.previous().clone().token_type;
             let right = self.unary()?;
 
             Ok(Expression::Unary{
@@ -167,16 +167,16 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expression, String> {
-        let ret = match self.peek() {
-            Token::False => Expression::Literal(ast::LiteralValue::Boolean(false)),
-            Token::True => Expression::Literal(ast::LiteralValue::Boolean(true)),
-            Token::Nil => Expression::Literal(ast::LiteralValue::Nil),
-            Token::Number(value) => Expression::Literal(ast::LiteralValue::Number(*value)),
-            Token::String(value) => Expression::Literal(ast::LiteralValue::String(value.clone())),
-            Token::LeftParen => {
+        let ret = match self.peek().clone().token_type {
+            TokenType::False => Expression::Literal(ast::LiteralValue::Boolean(false)),
+            TokenType::True => Expression::Literal(ast::LiteralValue::Boolean(true)),
+            TokenType::Nil => Expression::Literal(ast::LiteralValue::Nil),
+            TokenType::Number(value) => Expression::Literal(ast::LiteralValue::Number(value)),
+            TokenType::String(value) => Expression::Literal(ast::LiteralValue::String(value.clone())),
+            TokenType::LeftParen => {
                 self.advance();
                 let expr = self.expression()?;
-                self.consume(Token::RightParen, "Expect ')' after expression")?;
+                self.consume(TokenType::RightParen, "Expect ')' after expression")?;
 
                 return Ok(Expression::Grouping(Box::new(expr)));
             }

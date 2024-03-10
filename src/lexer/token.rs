@@ -1,8 +1,22 @@
 use std::fmt;
 
+#[derive(Debug, Clone)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub line: usize,
+}
+
+impl Token {
+    pub fn new(token_type: TokenType, line: usize) -> Self {
+        Self {
+            token_type,
+            line,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token {
+pub enum TokenType {
     // Single-character tokens
     LeftParen,
     RightParen,
@@ -53,48 +67,48 @@ pub enum Token {
     Eof,
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Token::LeftParen => write!(f, "("),
-            Token::RightParen => write!(f, ")"),
-            Token::LeftBrace => write!(f, "{{"),
-            Token::RightBrace => write!(f, "}}"),
-            Token::Comma => write!(f, ","),
-            Token::Dot => write!(f, "."),
-            Token::Minus => write!(f, "-"),
-            Token::Plus => write!(f, "+"),
-            Token::SemiColon => write!(f, ";"),
-            Token::Slash => write!(f, "/"),
-            Token::Star => write!(f, "*"),
-            Token::Bang => write!(f, "!"),
-            Token::BangEqual => write!(f, "!="),
-            Token::Equal => write!(f, "="),
-            Token::EqualEqual => write!(f, "=="),
-            Token::Greater => write!(f, ">"),
-            Token::GreaterEqual => write!(f, ">="),
-            Token::Less => write!(f, "<"),
-            Token::LessEqual => write!(f, "<="),
-            Token::Identifier(value) => write!(f, "{value}"),
-            Token::String(value) => write!(f, "{value}"),
-            Token::Number(value) => write!(f, "{value}"),
-            Token::And => write!(f, "and"),
-            Token::Class => write!(f, "class"),
-            Token::Else => write!(f, "else"),
-            Token::False => write!(f, "false"),
-            Token::Fun => write!(f, "fun"),
-            Token::For => write!(f, "for"),
-            Token::If => write!(f, "if"),
-            Token::Nil => write!(f, "nil"),
-            Token::Or => write!(f, "or"),
-            Token::Print => write!(f, "print"),
-            Token::Return => write!(f, "return"),
-            Token::Super => write!(f, "super"),
-            Token::This => write!(f, "this"),
-            Token::True => write!(f, "true"),
-            Token::Var => write!(f, "var"),
-            Token::While => write!(f, "while"),
-            Token::Eof => write!(f, "EOF"),
+            TokenType::LeftParen => write!(f, "("),
+            TokenType::RightParen => write!(f, ")"),
+            TokenType::LeftBrace => write!(f, "{{"),
+            TokenType::RightBrace => write!(f, "}}"),
+            TokenType::Comma => write!(f, ","),
+            TokenType::Dot => write!(f, "."),
+            TokenType::Minus => write!(f, "-"),
+            TokenType::Plus => write!(f, "+"),
+            TokenType::SemiColon => write!(f, ";"),
+            TokenType::Slash => write!(f, "/"),
+            TokenType::Star => write!(f, "*"),
+            TokenType::Bang => write!(f, "!"),
+            TokenType::BangEqual => write!(f, "!="),
+            TokenType::Equal => write!(f, "="),
+            TokenType::EqualEqual => write!(f, "=="),
+            TokenType::Greater => write!(f, ">"),
+            TokenType::GreaterEqual => write!(f, ">="),
+            TokenType::Less => write!(f, "<"),
+            TokenType::LessEqual => write!(f, "<="),
+            TokenType::Identifier(value) => write!(f, "{value}"),
+            TokenType::String(value) => write!(f, "{value}"),
+            TokenType::Number(value) => write!(f, "{value}"),
+            TokenType::And => write!(f, "and"),
+            TokenType::Class => write!(f, "class"),
+            TokenType::Else => write!(f, "else"),
+            TokenType::False => write!(f, "false"),
+            TokenType::Fun => write!(f, "fun"),
+            TokenType::For => write!(f, "for"),
+            TokenType::If => write!(f, "if"),
+            TokenType::Nil => write!(f, "nil"),
+            TokenType::Or => write!(f, "or"),
+            TokenType::Print => write!(f, "print"),
+            TokenType::Return => write!(f, "return"),
+            TokenType::Super => write!(f, "super"),
+            TokenType::This => write!(f, "this"),
+            TokenType::True => write!(f, "true"),
+            TokenType::Var => write!(f, "var"),
+            TokenType::While => write!(f, "while"),
+            TokenType::Eof => write!(f, "EOF"),
         }
     }
 }

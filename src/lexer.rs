@@ -1,7 +1,9 @@
 use crate::report_lex_error;
 
 pub mod token;
-use token::Token;
+use token::TokenType;
+
+use self::token::Token;
 
 pub struct Scanner {
     source: String,
@@ -30,7 +32,7 @@ impl Scanner {
             }
         }
     
-        tokens.push(Token::Eof);
+        tokens.push(Token::new(TokenType::Eof, self.line));
         tokens
     }
 
@@ -63,7 +65,7 @@ impl Scanner {
         }
     }
 
-    fn scan_string(&mut self) -> Option<Token> {
+    fn scan_string(&mut self) -> Option<TokenType> {
         while self.more_tokens() && self.peek().unwrap() != '"' {
             if self.peek().unwrap() == '\n' {
                 self.line += 1;
@@ -78,7 +80,7 @@ impl Scanner {
 
         self.advance();
 
-        Some(Token::String(self.source[self.start + 1..self.current - 1].to_string()))
+        Some(TokenType::String(self.source[self.start + 1..self.current - 1].to_string()))
     }
 
     fn scan_int(&mut self) {
@@ -87,7 +89,7 @@ impl Scanner {
         }
     }
 
-    fn scan_number(&mut self) -> Token {
+    fn scan_number(&mut self) -> TokenType {
         self.scan_int();
 
         if self.current + 1 < self.source.len() && self.peek().unwrap() == '.' && self.peek_next().unwrap().is_digit(10) {
@@ -95,10 +97,10 @@ impl Scanner {
             self.scan_int();
         }
 
-        Token::Number(self.source[self.start..self.current].parse().unwrap())
+        TokenType::Number(self.source[self.start..self.current].parse().unwrap())
     }
 
-    fn scan_identifier(&mut self) -> Token {
+    fn scan_identifier(&mut self) -> TokenType {
         while self.more_tokens() && (self.peek().unwrap().is_alphanumeric() || self.peek().unwrap() == '_') {
             self.advance();
         }
@@ -106,48 +108,49 @@ impl Scanner {
         let text = &self.source[self.start..self.current];
 
         match text.to_lowercase().as_str() {
-            "and" => Token::And,
-            "class" => Token::Class,
-            "else" => Token::Else,
-            "false" => Token::False,
-            "for" => Token::For,
-            "fun" => Token::Fun,
-            "if" => Token::If,
-            "nil" => Token::Nil,
-            "or" => Token::Or,
-            "print" => Token::Print,
-            "return" => Token::Return,
-            "super" => Token::Super,
-            "this" => Token::This,
-            "true" => Token::True,
-            "var" => Token::Var,
-            "while" => Token::While,
+            "and" => TokenType::And,
+            "class" => TokenType::Class,
+            "else" => TokenType::Else,
+            "false" => TokenType::False,
+            "for" => TokenType::For,
+            "fun" => TokenType::Fun,
+            "if" => TokenType::If,
+            "nil" => TokenType::Nil,
+            "or" => TokenType::Or,
+            "print" => TokenType::Print,
+            "return" => TokenType::Return,
+            "super" => TokenType::Super,
+            "this" => TokenType::This,
+            "true" => TokenType::True,
+            "var" => TokenType::Var,
+            "while" => TokenType::While,
 
-            text => Token::Identifier(text.to_string()),
+            text => TokenType::Identifier(text.to_string()),
         }
     }
 
     fn scan_token(&mut self) -> Option<Token> {
-        return Some(match self.advance()? {
-            '(' => Token::LeftParen,
-            ')' => Token::RightParen,
-            '{' => Token::LeftBrace,
-            '}' => Token::RightBrace,
-            ',' => Token::Comma,
-            '.' => Token::Dot,
-            '-' => Token::Minus,
-            '+' => Token::Plus,
-            ';' => Token::SemiColon,
-            '*' => Token::Star,
+        let line = self.line;
+        return Some(Token::new(match self.advance()? {
+            '(' => TokenType::LeftParen,
+            ')' => TokenType::RightParen,
+            '{' => TokenType::LeftBrace,
+            '}' => TokenType::RightBrace,
+            ',' => TokenType::Comma,
+            '.' => TokenType::Dot,
+            '-' => TokenType::Minus,
+            '+' => TokenType::Plus,
+            ';' => TokenType::SemiColon,
+            '*' => TokenType::Star,
 
-            '!' if self.match_next('=') => Token::BangEqual,
-            '!' => Token::Bang,
-            '=' if self.match_next('=') => Token::EqualEqual,
-            '=' => Token::Equal,
-            '<' if self.match_next('=') => Token::LessEqual,
-            '<' => Token::Less,
-            '>' if self.match_next('=') => Token::GreaterEqual,
-            '>' => Token::Greater,
+            '!' if self.match_next('=') => TokenType::BangEqual,
+            '!' => TokenType::Bang,
+            '=' if self.match_next('=') => TokenType::EqualEqual,
+            '=' => TokenType::Equal,
+            '<' if self.match_next('=') => TokenType::LessEqual,
+            '<' => TokenType::Less,
+            '>' if self.match_next('=') => TokenType::GreaterEqual,
+            '>' => TokenType::Greater,
 
             '"' => self.scan_string()?,
 
@@ -158,7 +161,7 @@ impl Scanner {
                 self.consume_line();
                 return None;
             }
-            '/' => Token::Slash,
+            '/' => TokenType::Slash,
 
             ' ' | '\r' | '\t' => return None,
 
@@ -171,7 +174,7 @@ impl Scanner {
                 report_lex_error(self.line, format!("Unexpected character: {c}").as_str());
                 return None;
             }
-        }) 
+        }, line)) 
     }
 
     fn more_tokens(&self) -> bool {

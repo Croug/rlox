@@ -1,22 +1,22 @@
 use std::{error::Error, f64::NEG_INFINITY, fmt::Display, mem::discriminant};
 
-use crate::{lexer::token::Token, parser::ast::{self, LiteralValue}, report_runtime_error};
+use crate::{lexer::token::TokenType, parser::ast::{self, LiteralValue}, report_runtime_error};
 
 #[derive(Debug)]
 pub struct RuntimeError {
-    pub token: Token,
+    pub token: TokenType,
     pub message: String,
 }
 
 impl RuntimeError {
-    pub fn new(token: Token, message: String) -> Self {
+    pub fn new(token: TokenType, message: String) -> Self {
         Self { token, message }
     }
 }
 
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let location = if self.token == Token::Eof {
+        let location = if self.token == TokenType::Eof {
             "at end".to_string()
         } else {
             format!("at '{token}'", token = self.token)
@@ -99,66 +99,66 @@ impl Interpreter {
             ast::Expression::Binary { left, operator, right } => self.evaluate_binary(*left, operator, *right)?,
         })
     }
-    fn evaluate_unary(&mut self, operator: Token, right: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+    fn evaluate_unary(&mut self, operator: TokenType, right: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
         let value = self.evaluate(right)?;
         Ok(match operator {
-            Token::Minus => {
+            TokenType::Minus => {
                 if let ast::LiteralValue::Number(num) = self.cast_to_num_nil(value) {
                     ast::LiteralValue::Number(-num)
                 } else {
                     ast::LiteralValue::Nil
                 }
             }
-            Token::Bang => {
+            TokenType::Bang => {
                 ast::LiteralValue::Boolean(!self.cast_to_bool(value))
             }
             _ => ast::LiteralValue::Nil
         })
     }
-    fn evaluate_binary(&mut self, left: ast::Expression, operator: Token, right: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+    fn evaluate_binary(&mut self, left: ast::Expression, operator: TokenType, right: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
         let dummy_string = ast::LiteralValue::String("".to_string());
         Ok(match operator {
-            Token::Minus => {
+            TokenType::Minus => {
                 if let (ast::LiteralValue::Number(left), ast::LiteralValue::Number(right)) = (self.cast_to_num_nil(left), self.cast_to_num_nil(right)) {
                     ast::LiteralValue::Number(left - right)
                 } else {
                     ast::LiteralValue::Nil
                 }
             }
-            Token::Plus if
+            TokenType::Plus if
                 discriminant(&left) == discriminant(&dummy_string) ||
                 discriminant(&right) == discriminant(&dummy_string) => {
                 ast::LiteralValue::String(format!("{}{}", self.cast_to_string(left), self.cast_to_string(right)))
             }
-            Token::Plus => {
+            TokenType::Plus => {
                 if let (ast::LiteralValue::Number(left), ast::LiteralValue::Number(right)) = (self.cast_to_num_nil(left), self.cast_to_num_nil(right)) {
                     ast::LiteralValue::Number(left + right)
                 } else {
                     ast::LiteralValue::Nil
                 }
             }
-            Token::Slash => {
+            TokenType::Slash => {
                 if let (ast::LiteralValue::Number(left), ast::LiteralValue::Number(right)) = (self.cast_to_num_nil(left), self.cast_to_num_nil(right)) {
                     ast::LiteralValue::Number(left / right)
                 } else {
                     ast::LiteralValue::Nil
                 }
             }
-            Token::Star => {
+            TokenType::Star => {
                 if let (ast::LiteralValue::Number(left), ast::LiteralValue::Number(right)) = (self.cast_to_num_nil(left), self.cast_to_num_nil(right)) {
                     ast::LiteralValue::Number(left * right)
                 } else {
                     ast::LiteralValue::Nil
                 }
             }
-            Token::Greater => ast::LiteralValue::Boolean(self.cast_to_num(left) > self.cast_to_num(right)),
-            Token::GreaterEqual => ast::LiteralValue::Boolean(self.cast_to_num(left) >= self.cast_to_num(right)),
-            Token::Less => ast::LiteralValue::Boolean(self.cast_to_num(left) < self.cast_to_num(right)),
-            Token::LessEqual => ast::LiteralValue::Boolean(self.cast_to_num(left) <= self.cast_to_num(right)),
-            Token::EqualEqual => ast::LiteralValue::Boolean(left == right),
-            Token::BangEqual => ast::LiteralValue::Boolean(left != right),
+            TokenType::Greater => ast::LiteralValue::Boolean(self.cast_to_num(left) > self.cast_to_num(right)),
+            TokenType::GreaterEqual => ast::LiteralValue::Boolean(self.cast_to_num(left) >= self.cast_to_num(right)),
+            TokenType::Less => ast::LiteralValue::Boolean(self.cast_to_num(left) < self.cast_to_num(right)),
+            TokenType::LessEqual => ast::LiteralValue::Boolean(self.cast_to_num(left) <= self.cast_to_num(right)),
+            TokenType::EqualEqual => ast::LiteralValue::Boolean(left == right),
+            TokenType::BangEqual => ast::LiteralValue::Boolean(left != right),
 
             _ => ast::LiteralValue::Nil
         })
