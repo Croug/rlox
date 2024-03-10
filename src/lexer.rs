@@ -105,7 +105,7 @@ impl Scanner {
 
         let text = &self.source[self.start..self.current];
 
-        match text {
+        match text.to_lowercase().as_str() {
             "and" => Token::And,
             "class" => Token::Class,
             "else" => Token::Else,
