@@ -54,7 +54,7 @@ impl Parser {
         if self.check(token.clone()) {
             Ok(self.advance().clone())
         } else {
-            Self::error(Token::new(token, self.peek().line), message)
+            Self::error(self.peek().clone(), message)
         }
     }
 
