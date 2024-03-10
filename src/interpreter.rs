@@ -1,6 +1,31 @@
-use std::{f64::NEG_INFINITY, mem::discriminant};
+use std::{error::Error, f64::NEG_INFINITY, fmt::Display, mem::discriminant};
 
-use crate::{lexer::token::Token, parser::ast};
+use crate::{lexer::token::Token, parser::ast::{self, LiteralValue}, report_runtime_error};
+
+#[derive(Debug)]
+pub struct RuntimeError {
+    pub token: Token,
+    pub message: String,
+}
+
+impl RuntimeError {
+    pub fn new(token: Token, message: String) -> Self {
+        Self { token, message }
+    }
+}
+
+impl Display for RuntimeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let location = if self.token == Token::Eof {
+            "at end".to_string()
+        } else {
+            format!("at '{token}'", token = self.token)
+        };
+        write!(f, "[line {line}] Error {location}: {message}", line = 0, location = location, message = self.message)
+    }
+}
+
+impl Error for RuntimeError {}
 
 pub struct Interpreter;
 
@@ -56,19 +81,28 @@ impl Interpreter {
             ast::LiteralValue::Nil => "nil".to_string()
         }
     }
-    pub fn evaluate(&mut self, expression: ast::Expression) -> ast::LiteralValue {
-        match expression {
-            ast::Expression::Literal(literal) => literal,
-            ast::Expression::Grouping(expr) => self.evaluate(*expr),
-            ast::Expression::Unary { operator, right } => self.evaluate_unary(operator, *right),
-            ast::Expression::Binary { left, operator, right } => self.evaluate_binary(*left, operator, *right),
-            _ => ast::LiteralValue::Nil,
+    pub fn interpret(&mut self, expression: ast::Expression) -> ast::LiteralValue {
+        match self.evaluate(expression) {
+            Ok(value) => value,
+            Err(error) => {
+                report_runtime_error(error);
+
+                ast::LiteralValue::Nil
+            }
         }
     }
-    fn evaluate_unary(&mut self, operator: Token, right: ast::Expression) -> ast::LiteralValue {
-        match operator {
+    fn evaluate(&mut self, expression: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+        Ok(match expression {
+            ast::Expression::Literal(literal) => literal,
+            ast::Expression::Grouping(expr) => self.evaluate(*expr)?,
+            ast::Expression::Unary { operator, right } => self.evaluate_unary(operator, *right)?,
+            ast::Expression::Binary { left, operator, right } => self.evaluate_binary(*left, operator, *right)?,
+        })
+    }
+    fn evaluate_unary(&mut self, operator: Token, right: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+        let value = self.evaluate(right)?;
+        Ok(match operator {
             Token::Minus => {
-                let value = self.evaluate(right);
                 if let ast::LiteralValue::Number(num) = self.cast_to_num_nil(value) {
                     ast::LiteralValue::Number(-num)
                 } else {
@@ -76,17 +110,16 @@ impl Interpreter {
                 }
             }
             Token::Bang => {
-                let value = self.evaluate(right);
                 ast::LiteralValue::Boolean(!self.cast_to_bool(value))
             }
             _ => ast::LiteralValue::Nil
-        }
+        })
     }
-    fn evaluate_binary(&mut self, left: ast::Expression, operator: Token, right: ast::Expression) -> ast::LiteralValue {
-        let left = self.evaluate(left);
-        let right = self.evaluate(right);
+    fn evaluate_binary(&mut self, left: ast::Expression, operator: Token, right: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+        let left = self.evaluate(left)?;
+        let right = self.evaluate(right)?;
         let dummy_string = ast::LiteralValue::String("".to_string());
-        match operator {
+        Ok(match operator {
             Token::Minus => {
                 if let (ast::LiteralValue::Number(left), ast::LiteralValue::Number(right)) = (self.cast_to_num_nil(left), self.cast_to_num_nil(right)) {
                     ast::LiteralValue::Number(left - right)
@@ -128,6 +161,6 @@ impl Interpreter {
             Token::BangEqual => ast::LiteralValue::Boolean(left != right),
 
             _ => ast::LiteralValue::Nil
-        }
+        })
     }
 }

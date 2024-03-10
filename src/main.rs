@@ -1,8 +1,9 @@
-use std::{fs, io::Write, path::PathBuf};
+use std::{error::Error, fs, io::Write, path::PathBuf};
 
 use clap::Parser;
 use interpreter::Interpreter;
 use lexer::{token::Token, Scanner};
+use parser::ast::LiteralValue;
 
 mod lexer;
 mod parser;
@@ -13,17 +14,15 @@ struct Cli {
     pub file: Option<PathBuf>,
 }
 
-fn run(code: String) {
+fn run(code: String) -> Result<LiteralValue, Box<dyn Error>> {
     let mut scanner = Scanner::new(code);
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
-    if let Ok(ast) = parser.parse() {
-        let mut interpreter = Interpreter::new();
-        let result = interpreter.evaluate(ast);
-        println!("= {result}");
-    } else {
-        eprintln!("Failed to parse");
-    }
+    let ast = parser.parse()?;
+    let mut interpreter = Interpreter::new();
+    let result = interpreter.interpret(ast);
+
+    Ok(result)
 }
 
 fn report_lex_error(line: usize, message: &str) {
@@ -38,12 +37,20 @@ fn report_parse_error(token: Token, message: &str) {
     }
 }
 
+fn report_runtime_error(error: interpreter::RuntimeError) {
+    if error.token == Token::Eof {
+        report(0, "at end", &error.message)
+    } else {
+        report(0, format!("at '{}'", error.token).as_str(), &error.message)
+    }
+}
+
 fn report(line: usize, location: &str, message: &str) {
     eprintln!("[line {line}] Error {location}: {message}");
 }
 
 fn run_file(file: PathBuf) {
-    run(fs::read_to_string(file).expect("Failed to read file"));
+    _ = run(fs::read_to_string(file).expect("Failed to read file"));
 }
 
 fn run_prompt() {
@@ -54,7 +61,9 @@ fn run_prompt() {
         print!("> ");
         stdout.flush().unwrap();
         stdin.read_line(&mut input).unwrap();
-        run(input);
+        if let Ok(result) = run(input) {
+            println!("= {}", result);
+        }
     }
 }
 
