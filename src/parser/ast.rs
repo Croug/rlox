@@ -17,7 +17,7 @@ pub enum Expression {
     Grouping(Box<Expression>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LiteralValue {
     Number(f64),
     String(String),

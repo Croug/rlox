@@ -1,10 +1,12 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use clap::Parser;
+use interpreter::Interpreter;
 use lexer::{token::Token, Scanner};
 
 mod lexer;
 mod parser;
+mod interpreter;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -15,7 +17,13 @@ fn run(code: String) {
     let mut scanner = Scanner::new(code);
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
-    _ = dbg!(parser.parse());
+    if let Ok(ast) = parser.parse() {
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.evaluate(ast);
+        println!("= {result}");
+    } else {
+        eprintln!("Failed to parse");
+    }
 }
 
 fn report_lex_error(line: usize, message: &str) {

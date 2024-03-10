@@ -4,7 +4,7 @@ use crate::{lexer::token::Token, report, report_lex_error, report_parse_error};
 
 use self::ast::Expression;
 
-mod ast;
+pub mod ast;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -174,6 +174,7 @@ impl Parser {
             Token::Number(value) => Expression::Literal(ast::LiteralValue::Number(*value)),
             Token::String(value) => Expression::Literal(ast::LiteralValue::String(value.clone())),
             Token::LeftParen => {
+                self.advance();
                 let expr = self.expression()?;
                 self.consume(Token::RightParen, "Expect ')' after expression")?;
 
