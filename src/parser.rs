@@ -5,7 +5,7 @@ use crate::{
     report, report_lex_error, report_parse_error,
 };
 
-use self::ast::Expression;
+use self::ast::{Expression, Statement};
 
 pub mod ast;
 
@@ -19,8 +19,17 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expression, String> {
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Statement>, String> {
+        let mut statements = vec![];
+
+        while self.more_tokens() {
+            match self.statement() {
+                Ok(statement) => statements.push(statement),
+                Err(_) => self.synchronize(),
+            }
+        }
+
+        Ok(statements)
     }
 
     fn peek(&self) -> &Token {
@@ -94,6 +103,28 @@ impl Parser {
 
     fn more_tokens(&self) -> bool {
         self.peek().token_type != TokenType::Eof
+    }
+
+    fn statement(&mut self) -> Result<Statement, String> {
+        if(self.match_tokens(vec![TokenType::Print])) {
+            self.printStatement()
+        } else {
+            self.expressionStatement()
+        }
+    }
+
+    fn expressionStatement(&mut self) -> Result<Statement, String> {
+        let expr = self.expression()?;
+        self.consume(TokenType::SemiColon, "Expect ';' after expression")?;
+
+        Ok(Statement::Expression(expr))
+    }
+
+    fn printStatement(&mut self) -> Result<Statement, String> {
+        let expr = self.expression()?;
+        self.consume(TokenType::SemiColon, "Expect ';' after value")?;
+
+        Ok(Statement::Print(expr))
     }
 
     fn expression(&mut self) -> Result<Expression, String> {

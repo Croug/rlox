@@ -2,7 +2,7 @@ use std::{error::Error, f64::NEG_INFINITY, fmt::Display, mem::discriminant};
 
 use crate::{
     lexer::token::TokenType,
-    parser::ast::{self, LiteralValue},
+    parser::ast::{self, LiteralValue, Statement},
     report_runtime_error,
 };
 
@@ -99,20 +99,31 @@ impl Interpreter {
             ast::LiteralValue::Nil => "nil".to_string(),
         }
     }
-    pub fn interpret(&mut self, expression: ast::Expression) -> ast::LiteralValue {
-        match self.evaluate(expression) {
-            Ok(value) => value,
-            Err(error) => {
+    pub fn interpret(&mut self, statements: Vec<ast::Statement>) {
+        for statement in statements {
+            if let Err(error) = self.evaluate_statement(statement) {
                 report_runtime_error(error);
-
-                ast::LiteralValue::Nil
+                return;
             }
         }
     }
-    fn evaluate(&mut self, expression: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
+    fn evaluate_statement(&mut self, statement: ast::Statement) -> Result<(), RuntimeError> {
+        match statement {
+            Statement::Expression(expr) => {
+                self.evaluate_expression(expr)?;
+            }
+            Statement::Print(expr) => {
+                let value = self.evaluate_expression(expr)?;
+                println!("{value}");
+            }
+        }
+
+        Ok(())
+    }
+    fn evaluate_expression(&mut self, expression: ast::Expression) -> Result<ast::LiteralValue, RuntimeError> {
         Ok(match expression {
             ast::Expression::Literal(literal) => literal,
-            ast::Expression::Grouping(expr) => self.evaluate(*expr)?,
+            ast::Expression::Grouping(expr) => self.evaluate_expression(*expr)?,
             ast::Expression::Unary { operator, right } => self.evaluate_unary(operator, *right)?,
             ast::Expression::Binary {
                 left,
@@ -126,7 +137,7 @@ impl Interpreter {
         operator: TokenType,
         right: ast::Expression,
     ) -> Result<ast::LiteralValue, RuntimeError> {
-        let value = self.evaluate(right)?;
+        let value = self.evaluate_expression(right)?;
         Ok(match operator {
             TokenType::Minus => {
                 if let ast::LiteralValue::Number(num) = self.cast_to_num_nil(value) {
@@ -145,8 +156,8 @@ impl Interpreter {
         operator: TokenType,
         right: ast::Expression,
     ) -> Result<ast::LiteralValue, RuntimeError> {
-        let left = self.evaluate(left)?;
-        let right = self.evaluate(right)?;
+        let left = self.evaluate_expression(left)?;
+        let right = self.evaluate_expression(right)?;
         let dummy_string = ast::LiteralValue::String("".to_string());
         Ok(match operator {
             TokenType::Minus => {

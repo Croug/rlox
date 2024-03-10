@@ -17,15 +17,15 @@ struct Cli {
     pub file: Option<PathBuf>,
 }
 
-fn run(code: String) -> Result<LiteralValue, Box<dyn Error>> {
+fn run(code: String) -> Result<(), Box<dyn Error>> {
     let mut scanner = Scanner::new(code);
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
-    let ast = parser.parse()?;
+    let asts = parser.parse()?;
     let mut interpreter = Interpreter::new();
-    let result = interpreter.interpret(ast);
+    let result = interpreter.interpret(asts);
 
-    Ok(result)
+    Ok(())
 }
 
 fn report_lex_error(line: usize, message: &str) {
@@ -68,9 +68,7 @@ fn run_prompt() {
         print!("> ");
         stdout.flush().unwrap();
         stdin.read_line(&mut input).unwrap();
-        if let Ok(result) = run(input) {
-            println!("= {}", result);
-        }
+        _ = run(input)
     }
 }
 
