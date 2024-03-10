@@ -34,7 +34,6 @@ impl fmt::Display for LiteralValue {
             LiteralValue::Nil => write!(f, "NIL"),
         }
     }
-
 }
 
 impl fmt::Display for Expression {
@@ -42,7 +41,11 @@ impl fmt::Display for Expression {
         match self {
             Expression::Literal(value) => write!(f, "{value}"),
             Expression::Unary { operator, right } => write!(f, "({operator} {right})"),
-            Expression::Binary { left, operator, right } => write!(f, "({left} {operator} {right})"),
+            Expression::Binary {
+                left,
+                operator,
+                right,
+            } => write!(f, "({left} {operator} {right})"),
             Expression::Grouping(expr) => write!(f, "({expr})"),
         }
     }

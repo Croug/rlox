@@ -2,12 +2,15 @@ use std::{error::Error, fs, io::Write, path::PathBuf};
 
 use clap::Parser;
 use interpreter::Interpreter;
-use lexer::{token::{Token, TokenType}, Scanner};
+use lexer::{
+    token::{Token, TokenType},
+    Scanner,
+};
 use parser::ast::LiteralValue;
 
+mod interpreter;
 mod lexer;
 mod parser;
-mod interpreter;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -33,7 +36,11 @@ fn report_parse_error(token: Token, message: &str) {
     if token.token_type == TokenType::Eof {
         report(token.line, "at end", message)
     } else {
-        report(token.line, format!("at '{}'", token.token_type).as_str(), message)
+        report(
+            token.line,
+            format!("at '{}'", token.token_type).as_str(),
+            message,
+        )
     }
 }
 

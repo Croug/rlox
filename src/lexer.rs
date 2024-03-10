@@ -13,7 +13,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(source: String) -> Self{
+    pub fn new(source: String) -> Self {
         Self {
             source,
             start: 0,
@@ -31,7 +31,7 @@ impl Scanner {
                 tokens.push(token)
             }
         }
-    
+
         tokens.push(Token::new(TokenType::Eof, self.line));
         tokens
     }
@@ -80,7 +80,9 @@ impl Scanner {
 
         self.advance();
 
-        Some(TokenType::String(self.source[self.start + 1..self.current - 1].to_string()))
+        Some(TokenType::String(
+            self.source[self.start + 1..self.current - 1].to_string(),
+        ))
     }
 
     fn scan_int(&mut self) {
@@ -92,7 +94,10 @@ impl Scanner {
     fn scan_number(&mut self) -> TokenType {
         self.scan_int();
 
-        if self.current + 1 < self.source.len() && self.peek().unwrap() == '.' && self.peek_next().unwrap().is_digit(10) {
+        if self.current + 1 < self.source.len()
+            && self.peek().unwrap() == '.'
+            && self.peek_next().unwrap().is_digit(10)
+        {
             self.advance();
             self.scan_int();
         }
@@ -101,7 +106,9 @@ impl Scanner {
     }
 
     fn scan_identifier(&mut self) -> TokenType {
-        while self.more_tokens() && (self.peek().unwrap().is_alphanumeric() || self.peek().unwrap() == '_') {
+        while self.more_tokens()
+            && (self.peek().unwrap().is_alphanumeric() || self.peek().unwrap() == '_')
+        {
             self.advance();
         }
 
@@ -131,50 +138,53 @@ impl Scanner {
 
     fn scan_token(&mut self) -> Option<Token> {
         let line = self.line;
-        return Some(Token::new(match self.advance()? {
-            '(' => TokenType::LeftParen,
-            ')' => TokenType::RightParen,
-            '{' => TokenType::LeftBrace,
-            '}' => TokenType::RightBrace,
-            ',' => TokenType::Comma,
-            '.' => TokenType::Dot,
-            '-' => TokenType::Minus,
-            '+' => TokenType::Plus,
-            ';' => TokenType::SemiColon,
-            '*' => TokenType::Star,
+        return Some(Token::new(
+            match self.advance()? {
+                '(' => TokenType::LeftParen,
+                ')' => TokenType::RightParen,
+                '{' => TokenType::LeftBrace,
+                '}' => TokenType::RightBrace,
+                ',' => TokenType::Comma,
+                '.' => TokenType::Dot,
+                '-' => TokenType::Minus,
+                '+' => TokenType::Plus,
+                ';' => TokenType::SemiColon,
+                '*' => TokenType::Star,
 
-            '!' if self.match_next('=') => TokenType::BangEqual,
-            '!' => TokenType::Bang,
-            '=' if self.match_next('=') => TokenType::EqualEqual,
-            '=' => TokenType::Equal,
-            '<' if self.match_next('=') => TokenType::LessEqual,
-            '<' => TokenType::Less,
-            '>' if self.match_next('=') => TokenType::GreaterEqual,
-            '>' => TokenType::Greater,
+                '!' if self.match_next('=') => TokenType::BangEqual,
+                '!' => TokenType::Bang,
+                '=' if self.match_next('=') => TokenType::EqualEqual,
+                '=' => TokenType::Equal,
+                '<' if self.match_next('=') => TokenType::LessEqual,
+                '<' => TokenType::Less,
+                '>' if self.match_next('=') => TokenType::GreaterEqual,
+                '>' => TokenType::Greater,
 
-            '"' => self.scan_string()?,
+                '"' => self.scan_string()?,
 
-            c if c.is_digit(10) => self.scan_number(),
-            c if c.is_alphabetic() || c == '_' => self.scan_identifier(),
+                c if c.is_digit(10) => self.scan_number(),
+                c if c.is_alphabetic() || c == '_' => self.scan_identifier(),
 
-            '/' if self.match_next('/') => {
-                self.consume_line();
-                return None;
-            }
-            '/' => TokenType::Slash,
+                '/' if self.match_next('/') => {
+                    self.consume_line();
+                    return None;
+                }
+                '/' => TokenType::Slash,
 
-            ' ' | '\r' | '\t' => return None,
+                ' ' | '\r' | '\t' => return None,
 
-            '\n' => {
-                self.line += 1;
-                return None;
-            }
+                '\n' => {
+                    self.line += 1;
+                    return None;
+                }
 
-            c => {
-                report_lex_error(self.line, format!("Unexpected character: {c}").as_str());
-                return None;
-            }
-        }, line)) 
+                c => {
+                    report_lex_error(self.line, format!("Unexpected character: {c}").as_str());
+                    return None;
+                }
+            },
+            line,
+        ));
     }
 
     fn more_tokens(&self) -> bool {

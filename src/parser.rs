@@ -1,6 +1,9 @@
 use std::mem::discriminant;
 
-use crate::{lexer::token::{Token, TokenType}, report, report_lex_error, report_parse_error};
+use crate::{
+    lexer::token::{Token, TokenType},
+    report, report_lex_error, report_parse_error,
+};
 
 use self::ast::Expression;
 
@@ -13,10 +16,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self {
-            tokens,
-            current: 0,
-        }
+        Self { tokens, current: 0 }
     }
 
     pub fn parse(&mut self) -> Result<Expression, String> {
@@ -24,11 +24,15 @@ impl Parser {
     }
 
     fn peek(&self) -> &Token {
-        self.tokens.get(self.current).expect("Read header beyond end of file")
+        self.tokens
+            .get(self.current)
+            .expect("Read header beyond end of file")
     }
 
     fn previous(&self) -> &Token {
-        self.tokens.get(self.current - 1).expect("Read header at beginning of file")
+        self.tokens
+            .get(self.current - 1)
+            .expect("Read header at beginning of file")
     }
 
     fn advance(&mut self) -> &Token {
@@ -48,7 +52,7 @@ impl Parser {
 
     fn error<T>(token: Token, message: &str) -> Result<T, String> {
         report_parse_error(token, message);
-    
+
         Err(message.to_string())
     }
 
@@ -59,7 +63,14 @@ impl Parser {
             }
 
             match self.peek().token_type {
-                TokenType::Class | TokenType::Fun | TokenType::Var | TokenType::For | TokenType::If | TokenType::While | TokenType::Print | TokenType::Return => return,
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
                 _ => {}
             }
 
@@ -97,7 +108,7 @@ impl Parser {
             expr = Expression::Binary {
                 left: Box::new(expr),
                 right: Box::new(right),
-                operator
+                operator,
             }
         }
 
@@ -107,13 +118,18 @@ impl Parser {
     fn comparison(&mut self) -> Result<Expression, String> {
         let mut expr = self.term()?;
 
-        while self.match_tokens(vec![TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual]) {
+        while self.match_tokens(vec![
+            TokenType::Greater,
+            TokenType::GreaterEqual,
+            TokenType::Less,
+            TokenType::LessEqual,
+        ]) {
             let operator = self.previous().clone().token_type;
             let right = self.term()?;
             expr = Expression::Binary {
                 left: Box::new(expr),
                 right: Box::new(right),
-                operator
+                operator,
             }
         }
 
@@ -123,13 +139,13 @@ impl Parser {
     fn term(&mut self) -> Result<Expression, String> {
         let mut expr = self.factor()?;
 
-        while(self.match_tokens(vec![TokenType::Minus, TokenType::Plus])) {
+        while (self.match_tokens(vec![TokenType::Minus, TokenType::Plus])) {
             let operator = self.previous().clone().token_type;
             let right = self.factor()?;
             expr = Expression::Binary {
                 left: Box::new(expr),
                 right: Box::new(right),
-                operator
+                operator,
             }
         }
 
@@ -145,7 +161,7 @@ impl Parser {
             expr = Expression::Binary {
                 left: Box::new(expr),
                 right: Box::new(right),
-                operator
+                operator,
             }
         }
 
@@ -157,9 +173,9 @@ impl Parser {
             let operator = self.previous().clone().token_type;
             let right = self.unary()?;
 
-            Ok(Expression::Unary{
+            Ok(Expression::Unary {
                 operator,
-                right: Box::new(right)
+                right: Box::new(right),
             })
         } else {
             self.primary()
@@ -172,7 +188,9 @@ impl Parser {
             TokenType::True => Expression::Literal(ast::LiteralValue::Boolean(true)),
             TokenType::Nil => Expression::Literal(ast::LiteralValue::Nil),
             TokenType::Number(value) => Expression::Literal(ast::LiteralValue::Number(value)),
-            TokenType::String(value) => Expression::Literal(ast::LiteralValue::String(value.clone())),
+            TokenType::String(value) => {
+                Expression::Literal(ast::LiteralValue::String(value.clone()))
+            }
             TokenType::LeftParen => {
                 self.advance();
                 let expr = self.expression()?;
@@ -180,7 +198,7 @@ impl Parser {
 
                 return Ok(Expression::Grouping(Box::new(expr)));
             }
-            _=> return Self::error(self.peek().clone(), "Expect expression")
+            _ => return Self::error(self.peek().clone(), "Expect expression"),
         };
 
         self.advance();
